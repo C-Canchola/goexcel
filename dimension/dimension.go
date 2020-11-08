@@ -10,8 +10,11 @@ import (
 
 // TableDimension provides information about a tab's
 // tabular dimensions.
-// These being properties such as row count and column count.
-// RowCount is the number of non-empty rows not including the header.
+// These being properties such as ColumnCount and RowCount.
+// 	ColumnCount is the number of values in the header row.
+//
+// 	RowCount is the number of continuous rows which are not
+// 	empty under the ColumnCount subspace.
 type TableDimension struct {
 	RowCount, ColumnCount int
 }
@@ -41,6 +44,9 @@ func getColumnCount(cells [][]string)int{
 		return 0
 	}
 	firstRow := cells[0]
+	if len(firstRow) == 0{
+		return 0
+	}
 	cnt := 0
 	for firstRow[cnt] != ""{
 		cnt++
@@ -71,6 +77,10 @@ func getNonEmptyRowCount(cells [][]string, colCount int)int{
 	return nonEmptyRowCount
 }
 func rowEmpty(row []string, colCount int)bool{
+	if len(row) == 0{
+		return true
+	}
+
 	for i := 0; i < colCount;i++{
 		if row[i] != ""{
 			return false

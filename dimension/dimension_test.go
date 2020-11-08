@@ -10,6 +10,8 @@ var dataFilePath = filepath.Join("data", "data.xlsx")
 const twoRowFourColumnName = "TWO_ROW_FOUR_COLUMN"
 const zeroRowFourColumnName = "ZERO_ROW_FOUR_COLUMN"
 const blankName = "BLANK"
+const nonBlankNoHeaderName = "NON_BLANK_NO_HEADER"
+const discontinuousThreeColFourRowName = "DISCON_3_COL_4_ROW"
 
 func getDataFile()(*excelize.File, error){
 	return excelize.OpenFile(dataFilePath)
@@ -71,8 +73,24 @@ func TestMakeTableDimension(t *testing.T) {
 
 	_, blankErr := MakeTableDimension(f, blankName)
 	if blankErr != ErrNoHeaderRow{
-		t.Error("ErrNoHeader row should be returned when reading a blank tab")
+		t.Error("ErrNoHeaderRow should be returned when reading a blank tab")
 	}
 
+	_, nonBlankNoHeader := MakeTableDimension(f, nonBlankNoHeaderName)
+	if nonBlankNoHeader != ErrNoHeaderRow{
+		t.Error("ErrNoHeaderRow should be returned when reading a non blank tab without a header row")
+	}
+
+	discontinuousDim, err := MakeTableDimension(f, discontinuousThreeColFourRowName)
+	if err != nil{
+		t.Fatal(err)
+	}
+
+	if discontinuousDim.ColumnCount != 3{
+		t.Error("discontinuous dimension should have 3 columns")
+	}
+	if discontinuousDim.RowCount != 4 {
+		t.Error("discontinuous dimension should have 4 rows")
+	}
 
 }

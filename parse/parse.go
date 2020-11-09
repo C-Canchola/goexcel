@@ -31,9 +31,18 @@ func MakeParser(f *excelize.File)(Parser, error){
 func (p Parser)ParseFloat(sheet string, row int, col int)(float64, error){
 	s, err := p.styler.getNumericStyledCellValue(sheet, row, col)
 	if err != nil{
-		return 0, err
+		return -1, err
 	}
 	return strconv.ParseFloat(s, 64)
+}
+// ParseInt attempts to parse the given cell address as an int by applying
+// a numeric styling before accessing the value.
+func (p Parser)ParseInt(sheet string, row int, col int)(int, error){
+	v, err := p.ParseFloat(sheet, row, col)
+	if err != nil{
+		return -1, err
+	}
+	return int(v), nil
 }
 // ParseTime attempts to parse the given cell address as a time.Time by
 // applying a numeric styling before accessing the value.
@@ -43,6 +52,11 @@ func (p Parser)ParseTime(sheet string, row int, col int)(time.Time, error){
 		return time.Time{}, err
 	}
 	return excelize.ExcelDateToTime(v, false)
+}
+// ParseString attempts to parse the given cell address as a string
+// by applying NO styling before accessing the value.
+func (p Parser)ParseString(sheet string, row int, col int)(string, error){
+	return p.styler.getCurrentStyledCellValue(sheet, row, col)
 }
 type styler struct {
 	f *excelize.File

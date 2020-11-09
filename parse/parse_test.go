@@ -65,6 +65,13 @@ func TestParser(t *testing.T){
 	if parsedNumericCellValue != 1.1{
 		t.Error("parsed float should equal 1.1 but equals", parsedNumericCellValue)
 	}
+	parsedIntCellValue, err := parser.ParseInt(oneCellName, 1, 1)
+	if err != nil{
+		t.Error("error parsing int")
+	}
+	if parsedIntCellValue != 1{
+		t.Error("parsed int should equal 1 but equals", parsedIntCellValue)
+	}
 
 	expectedTime := time.Date(2020, time.Month(11), 8, 0, 0, 0, 0, time.UTC)
 	parsedTime, err := parser.ParseTime(oneDateCellName, 1, 1)

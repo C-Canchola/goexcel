@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"goexcel/parse"
 	"reflect"
@@ -29,6 +28,9 @@ type Schema struct {
 	parser parse.Parser
 }
 
+// MakeSchema creates a Schema for a given excel file.
+// One schema should exist per file to keep workbook
+// level variables in sync.
 func MakeSchema(filePath string)(Schema, error){
 	f, err := excelize.OpenFile(filePath)
 	if err != nil{
@@ -50,6 +52,8 @@ type sheetSchema struct {
 	schema Schema
 }
 
+// TimeField is a valid type for Schema parsing.
+// Its parsed value is a time.Time value.
 type TimeField struct {
 	ParsedValue time.Time
 	Successful bool
@@ -57,20 +61,24 @@ type TimeField struct {
 	HeaderValue string
 }
 
+// FloatField is a valid type for Schema parsing.
+// Its parsed value is float64 value.
 type FloatField struct {
 	ParsedValue float64
 	Successful bool
 	StringValue string
 	HeaderValue string
 }
-
+// IntField is a valid type for Schema parsing.
+// Its parsed value is an int value.
 type IntField struct {
 	ParsedValue int
 	Successful bool
 	StringValue string
 	HeaderValue string
 }
-
+// StringField is a valid type for Schema parsing.
+// Its parsed value is a string value.
 type StringField struct {
 	ParsedValue string
 	Successful bool
@@ -177,8 +185,6 @@ func (shtSc sheetSchema) makeNewSliceEl(el reflect.Type, pp preProcessor, tagged
 	newElVal := newElValPtr.Elem()
 
 	for fieldIdx, colIdx := range taggedFieldMap{
-		fmt.Println(fieldIdx, "if fieldIdx")
-		fmt.Println("colidx is", colIdx)
 		fieldPtr := newElVal.Field(fieldIdx)
 
 		switch pp.taggedFieldTypeMap[fieldIdx] {

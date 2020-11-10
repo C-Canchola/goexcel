@@ -1,4 +1,4 @@
-module goexcel
+module github.com/C-Canchola/goexcel
 
 go 1.15
 

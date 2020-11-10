@@ -2,7 +2,7 @@ package schema
 
 import (
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
-	"goexcel/dimension"
+	"github.com/C-Canchola/goexcel/dimension"
 )
 
 // Functions to help store information about the sheet to be parsed by

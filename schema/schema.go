@@ -2,7 +2,7 @@ package schema
 
 import (
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
-	"goexcel/parse"
+	"github.com/C-Canchola/goexcel/parse"
 	"reflect"
 	"time"
 )

@@ -51,6 +51,7 @@ type sheetSchema struct {
 	sheetName string
 
 	schema Schema
+	parsedSheet *parse.ParsedSheet
 }
 
 // TimeField is a valid type for Schema parsing.
@@ -87,15 +88,20 @@ type StringField struct {
 }
 
 func (sc Schema)makeSheetSchema(sheetName string)(sheetSchema, error){
+	parsedSheet, err := parse.MakeParsedSheet(sc.f, sheetName)
+	if err != nil{
+		return sheetSchema{}, err
+	}
 	return sheetSchema{
 		sheetName: sheetName,
 		schema:    sc,
+		parsedSheet: parsedSheet,
 	}, nil
 }
 
 func (shtSc sheetSchema) makeTimeField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor)TimeField{
-	s, _ := shtSc.schema.parser.ParseString(shtSc.sheetName, rowIdx + ExcelRowOffset, colIdx + ExcelOffset)
-	t, err := shtSc.schema.parser.ParseTime(shtSc.sheetName, rowIdx + ExcelRowOffset, colIdx + ExcelOffset)
+	s, _ := shtSc.parsedSheet.ParsedString(rowIdx + ExcelOffset, colIdx)
+	t, err := shtSc.parsedSheet.ParsedTime(rowIdx + ExcelOffset, colIdx)
 	success := err == nil
 	return TimeField{
 		ParsedValue: t,
@@ -106,8 +112,8 @@ func (shtSc sheetSchema) makeTimeField(rowIdx int, fieldIdx int, colIdx int, pp 
 }
 
 func (shtSc sheetSchema)makeFloatField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor)FloatField{
-	s, _ := shtSc.schema.parser.ParseString(shtSc.sheetName, rowIdx + ExcelRowOffset, colIdx + ExcelOffset)
-	f, err := shtSc.schema.parser.ParseFloat(shtSc.sheetName, rowIdx + ExcelRowOffset, colIdx + ExcelOffset)
+	s, _ := shtSc.parsedSheet.ParsedString(rowIdx + ExcelOffset, colIdx)
+	f, err := shtSc.parsedSheet.ParsedFloat(rowIdx + ExcelOffset, colIdx)
 	success := err == nil
 	return FloatField{
 		ParsedValue: f,
@@ -118,8 +124,8 @@ func (shtSc sheetSchema)makeFloatField(rowIdx int, fieldIdx int, colIdx int, pp 
 }
 
 func (shtSc sheetSchema)makeIntField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor)IntField{
-	s, _ := shtSc.schema.parser.ParseString(shtSc.sheetName, rowIdx + ExcelRowOffset, colIdx + ExcelOffset)
-	i, err := shtSc.schema.parser.ParseInt(shtSc.sheetName, rowIdx + ExcelRowOffset, colIdx + ExcelOffset)
+	s, _ := shtSc.parsedSheet.ParsedString(rowIdx + ExcelOffset, colIdx)
+	i, err := shtSc.parsedSheet.ParsedInt(rowIdx + ExcelOffset, colIdx)
 	success := err == nil
 	return IntField{
 		ParsedValue: i,
@@ -130,7 +136,7 @@ func (shtSc sheetSchema)makeIntField(rowIdx int, fieldIdx int, colIdx int, pp pr
 }
 
 func (shtSc sheetSchema)makeStringField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor)StringField{
-	s, _ := shtSc.schema.parser.ParseString(shtSc.sheetName, rowIdx + ExcelRowOffset, colIdx + ExcelOffset)
+	s, _ := shtSc.parsedSheet.ParsedString(rowIdx + ExcelOffset, colIdx)
 
 	return StringField{
 		ParsedValue: s,
@@ -161,10 +167,7 @@ func (sc Schema)ApplySchema(sheet string, v interface{})error{
 		return err
 	}
 
-	dStart := time.Now()
-	sheetDetails, err := makeSheetDetails(sc.f, sheet)
-	dEnd := time.Now()
-	fmt.Println("seconds to create sheet details", dEnd.Sub(dStart).Seconds())
+	sheetDetails, err := sheetSchema.makeSheetDetails()
 	if err != nil{
 		return err
 	}
@@ -173,14 +176,12 @@ func (sc Schema)ApplySchema(sheet string, v interface{})error{
 	if err != nil{
 		return err
 	}
-
-	pStart := time.Now()
+	dNow := time.Now()
 	for i := 0; i < sheetDetails.tblDimension.RowCount; i++{
 		newSliceEl := sheetSchema.makeNewSliceEl(sliceEl, preProcessor, taggedFieldMap, i)
 		vSlice.Set(reflect.Append(vSlice, newSliceEl))
 	}
-	pEnd := time.Now()
-	fmt.Println("Seconds to create process schema", pEnd.Sub(pStart).Seconds())
+	fmt.Println("parsing values took seconds",time.Now().Sub(dNow).Seconds())
 	return nil
 }
 

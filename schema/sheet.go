@@ -16,6 +16,17 @@ type sheetDetails struct {
 	tblDimension dimension.TableDimension
 }
 
+func (shtSc sheetSchema)makeSheetDetails()(sheetDetails, error){
+	d := dimension.TableDimension{
+		RowCount:    len(shtSc.parsedSheet.Original) - 1,
+		ColumnCount: len(shtSc.parsedSheet.Original[0]),
+	}
+	return sheetDetails{
+		headerRow:    shtSc.parsedSheet.Original[0],
+		tblDimension: d,
+	},nil
+}
+
 func makeSheetDetails(f *excelize.File, sheet string)(sheetDetails, error) {
 	tdS := time.Now()
 	tblDimension, err := dimension.MakeTableDimension(f, sheet)

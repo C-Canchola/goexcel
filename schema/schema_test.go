@@ -44,7 +44,7 @@ type LargeTwoString struct {
 }
 
 func TestSchema_LargeRead(t *testing.T){
-	var itemArr = make([]LargeStringOnly, 0)
+	var itemArr = make([]LargeTwoInts, 0)
 	s, err := MakeSchema(filepath.Join("data", "large_data.xlsx"))
 	if err != nil{
 		t.Fatal(err)
@@ -54,5 +54,6 @@ func TestSchema_LargeRead(t *testing.T){
 		t.Error(err)
 	}
 	fmt.Println(len(itemArr))
+	fmt.Println(itemArr[0])
 
 }

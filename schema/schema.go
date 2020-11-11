@@ -1,16 +1,15 @@
 package schema
 
 import (
-	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/C-Canchola/goexcel/parse"
 	"reflect"
 	"time"
 )
+
 // schema package uses reflection to populate slices of structs
 // to reduce amount of code to read in tabular excel sheets
 // as slices of go types.
-
 
 // SchemaTagKey is used to identify which fields of a
 // struct should the parsing be applied to.
@@ -28,20 +27,20 @@ type Schema struct {
 // MakeSchema creates a Schema for a given excel file.
 // One schema should exist per file to keep workbook
 // level variables in sync.
-func MakeSchema(filePath string)(Schema, error){
+func MakeSchema(filePath string) (Schema, error) {
 	f, err := excelize.OpenFile(filePath)
-	if err != nil{
+	if err != nil {
 		return Schema{}, err
 	}
 	return Schema{
-		f:      f,
+		f: f,
 	}, nil
 }
 
 type sheetSchema struct {
 	sheetName string
 
-	schema Schema
+	schema      Schema
 	parsedSheet *parse.ParsedSheet
 }
 
@@ -49,7 +48,7 @@ type sheetSchema struct {
 // Its parsed value is a time.Time value.
 type TimeField struct {
 	ParsedValue time.Time
-	Successful bool
+	Successful  bool
 	StringValue string
 	HeaderValue string
 }
@@ -58,41 +57,43 @@ type TimeField struct {
 // Its parsed value is float64 value.
 type FloatField struct {
 	ParsedValue float64
-	Successful bool
+	Successful  bool
 	StringValue string
 	HeaderValue string
 }
+
 // IntField is a valid type for Schema parsing.
 // Its parsed value is an int value.
 type IntField struct {
 	ParsedValue int
-	Successful bool
+	Successful  bool
 	StringValue string
 	HeaderValue string
 }
+
 // StringField is a valid type for Schema parsing.
 // Its parsed value is a string value.
 type StringField struct {
 	ParsedValue string
-	Successful bool
+	Successful  bool
 	HeaderValue string
 }
 
-func (sc Schema)makeSheetSchema(sheetName string)(sheetSchema, error){
+func (sc Schema) makeSheetSchema(sheetName string) (sheetSchema, error) {
 	parsedSheet, err := parse.MakeParsedSheet(sc.f, sheetName)
-	if err != nil{
+	if err != nil {
 		return sheetSchema{}, err
 	}
 	return sheetSchema{
-		sheetName: sheetName,
-		schema:    sc,
+		sheetName:   sheetName,
+		schema:      sc,
 		parsedSheet: parsedSheet,
 	}, nil
 }
 
-func (shtSc sheetSchema) makeTimeField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor)TimeField{
-	s, _ := shtSc.parsedSheet.ParsedString(rowIdx + ExcelOffset, colIdx)
-	t, err := shtSc.parsedSheet.ParsedTime(rowIdx + ExcelOffset, colIdx)
+func (shtSc sheetSchema) makeTimeField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor) TimeField {
+	s, _ := shtSc.parsedSheet.ParsedString(rowIdx+ExcelOffset, colIdx)
+	t, err := shtSc.parsedSheet.ParsedTime(rowIdx+ExcelOffset, colIdx)
 	success := err == nil
 	return TimeField{
 		ParsedValue: t,
@@ -102,9 +103,9 @@ func (shtSc sheetSchema) makeTimeField(rowIdx int, fieldIdx int, colIdx int, pp 
 	}
 }
 
-func (shtSc sheetSchema)makeFloatField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor)FloatField{
-	s, _ := shtSc.parsedSheet.ParsedString(rowIdx + ExcelOffset, colIdx)
-	f, err := shtSc.parsedSheet.ParsedFloat(rowIdx + ExcelOffset, colIdx)
+func (shtSc sheetSchema) makeFloatField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor) FloatField {
+	s, _ := shtSc.parsedSheet.ParsedString(rowIdx+ExcelOffset, colIdx)
+	f, err := shtSc.parsedSheet.ParsedFloat(rowIdx+ExcelOffset, colIdx)
 	success := err == nil
 	return FloatField{
 		ParsedValue: f,
@@ -114,9 +115,9 @@ func (shtSc sheetSchema)makeFloatField(rowIdx int, fieldIdx int, colIdx int, pp 
 	}
 }
 
-func (shtSc sheetSchema)makeIntField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor)IntField{
-	s, _ := shtSc.parsedSheet.ParsedString(rowIdx + ExcelOffset, colIdx)
-	i, err := shtSc.parsedSheet.ParsedInt(rowIdx + ExcelOffset, colIdx)
+func (shtSc sheetSchema) makeIntField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor) IntField {
+	s, _ := shtSc.parsedSheet.ParsedString(rowIdx+ExcelOffset, colIdx)
+	i, err := shtSc.parsedSheet.ParsedInt(rowIdx+ExcelOffset, colIdx)
 	success := err == nil
 	return IntField{
 		ParsedValue: i,
@@ -126,8 +127,8 @@ func (shtSc sheetSchema)makeIntField(rowIdx int, fieldIdx int, colIdx int, pp pr
 	}
 }
 
-func (shtSc sheetSchema)makeStringField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor)StringField{
-	s, _ := shtSc.parsedSheet.ParsedString(rowIdx + ExcelOffset, colIdx)
+func (shtSc sheetSchema) makeStringField(rowIdx int, fieldIdx int, colIdx int, pp preProcessor) StringField {
+	s, _ := shtSc.parsedSheet.ParsedString(rowIdx+ExcelOffset, colIdx)
 
 	return StringField{
 		ParsedValue: s,
@@ -138,52 +139,51 @@ func (shtSc sheetSchema)makeStringField(rowIdx int, fieldIdx int, colIdx int, pp
 
 // ApplySchema attempts to apply the schema to a worksheet
 // and struct slice based upon the tags of the slice's elements
-func (sc Schema)ApplySchema(sheet string, v interface{})error{
+func (sc Schema) ApplySchema(sheet string, v interface{}) error {
 	sheetSchema, err := sc.makeSheetSchema(sheet)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
 	vSlicePtr := reflect.ValueOf(v)
 	vSlice := vSlicePtr.Elem()
 
-	if !typeIsStructSlice(vSlice){
+	if !typeIsStructSlice(vSlice) {
 		return ErrNotStructSlice
 	}
 	sliceEl := vSlice.Type().Elem()
 	tempElVal := reflect.New(sliceEl).Elem()
 
 	preProcessor, err := makePreprocessor(tempElVal)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
 	sheetDetails, err := sheetSchema.makeSheetDetails()
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
 	taggedFieldMap, err := preProcessor.getTaggedFieldColumnIndexMap(sheetDetails)
-	if err != nil{
+	if err != nil {
 		return err
 	}
-	dNow := time.Now()
-	for i := 0; i < sheetDetails.tblDimension.RowCount; i++{
+
+	for i := 0; i < sheetDetails.tblDimension.RowCount; i++ {
 		newSliceEl := sheetSchema.makeNewSliceEl(sliceEl, preProcessor, taggedFieldMap, i)
 		vSlice.Set(reflect.Append(vSlice, newSliceEl))
 	}
-	fmt.Println("parsing values took seconds",time.Now().Sub(dNow).Seconds())
 	return nil
 }
 
 // makeNewSliceEl iterates each tagged field and applies the correct
 // parsing functions to each field.
 // NOTE: EXCEL ROW OFFSET IS APPLIED IN PARSING FUNCTIONS
-func (shtSc sheetSchema) makeNewSliceEl(el reflect.Type, pp preProcessor, taggedFieldMap map[int]int, rowIdx int)reflect.Value{
+func (shtSc sheetSchema) makeNewSliceEl(el reflect.Type, pp preProcessor, taggedFieldMap map[int]int, rowIdx int) reflect.Value {
 	newElValPtr := reflect.New(el)
 	newElVal := newElValPtr.Elem()
 
-	for fieldIdx, colIdx := range taggedFieldMap{
+	for fieldIdx, colIdx := range taggedFieldMap {
 		fieldPtr := newElVal.Field(fieldIdx)
 
 		switch pp.taggedFieldTypeMap[fieldIdx] {
@@ -208,4 +208,3 @@ func (shtSc sheetSchema) makeNewSliceEl(el reflect.Type, pp preProcessor, tagged
 	}
 	return newElVal
 }
-

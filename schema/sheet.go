@@ -20,7 +20,7 @@ type sheetDetails struct {
 	tblDimension TableDimension
 }
 
-func (shtSc sheetSchema)makeSheetDetails()(sheetDetails, error){
+func (shtSc sheetSchema) makeSheetDetails() (sheetDetails, error) {
 	d := TableDimension{
 		RowCount:    len(shtSc.parsedSheet.Original) - 1,
 		ColumnCount: len(shtSc.parsedSheet.Original[0]),
@@ -28,17 +28,17 @@ func (shtSc sheetSchema)makeSheetDetails()(sheetDetails, error){
 	return sheetDetails{
 		headerRow:    shtSc.parsedSheet.Original[0],
 		tblDimension: d,
-	},nil
+	}, nil
 }
 
-func (d sheetDetails)headerExcelColumnIndices()map[string][]int{
+func (d sheetDetails) headerExcelColumnIndices() map[string][]int {
 	m := make(map[string][]int)
 
-	for i, header := range d.headerRow{
+	for i, header := range d.headerRow {
 		_, ok := m[header]
 		if ok {
 			m[header] = append(m[header], i)
-		}else{
+		} else {
 			m[header] = append(make([]int, 0), i)
 		}
 	}

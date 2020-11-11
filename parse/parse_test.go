@@ -11,11 +11,11 @@ var dataFilePath = filepath.Join("data", "data.xlsx")
 
 func TestMakeParsedSheet(t *testing.T) {
 	f, err := excelize.OpenFile(dataFilePath)
-	if err != nil{
+	if err != nil {
 		t.Fatal(err)
 	}
-	ps ,err := MakeParsedSheet(f, "PARSE")
-	if err != nil{
+	ps, err := MakeParsedSheet(f, "PARSE")
+	if err != nil {
 		t.Fatal(err)
 	}
 

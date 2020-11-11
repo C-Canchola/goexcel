@@ -13,12 +13,12 @@ const tableColumnRatio = 1.229
 // FileWriter is meant to provide a simple
 // set of methods to write data to an excel file.
 type FileWriter struct {
-	file *excelize.File
+	file            *excelize.File
 	hasWrittenSheet bool
 }
 
 // MakeNewFileWriter creates a new FileWriter
-func MakeNewFileWriter()*FileWriter{
+func MakeNewFileWriter() *FileWriter {
 	return &FileWriter{
 		file:            excelize.NewFile(),
 		hasWrittenSheet: false,
@@ -27,15 +27,15 @@ func MakeNewFileWriter()*FileWriter{
 
 // MakeFileWriterFromExisting reads an existing Excel file
 // so that its contents can be appended or changed.
-func MakeFileWriterFromExisting(path string)(*FileWriter, error){
+func MakeFileWriterFromExisting(path string) (*FileWriter, error) {
 	f, err := excelize.OpenFile(path)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	return &FileWriter{
 		file:            f,
 		hasWrittenSheet: true,
-	},nil
+	}, nil
 }
 
 func pathDoesNotExist(path string) bool {
@@ -44,6 +44,7 @@ func pathDoesNotExist(path string) bool {
 	}
 	return false
 }
+
 // ErrNonOverwriteOnExistingPath is returned when attempting to write on
 // existing file path when explicitly setting overwrite to false.
 var ErrNonOverwriteOnExistingPath = errors.New("writing: attempting to write on an existing path with overwrite set to false")
@@ -51,20 +52,20 @@ var ErrNonOverwriteOnExistingPath = errors.New("writing: attempting to write on 
 // SaveFile attempts to save at the given path.
 //		overwrite set to false will return ErrNonOverwriteOnExistingPath
 //		when attempting to write on an existing path.
-func (w *FileWriter)SaveFile(path string, overwrite bool)error{
-	if !pathDoesNotExist(path) && !overwrite{
+func (w *FileWriter) SaveFile(path string, overwrite bool) error {
+	if !pathDoesNotExist(path) && !overwrite {
 		return ErrNonOverwriteOnExistingPath
 	}
 	return w.file.SaveAs(path)
 }
 
-func (w *FileWriter)sheetExists(sheet string)bool{
+func (w *FileWriter) sheetExists(sheet string) bool {
 	_, ok := w.file.Sheet[sheet]
 	return ok
 }
 
-func (w *FileWriter)populateEmptySheet(sheet string){
-	if !w.hasWrittenSheet{
+func (w *FileWriter) populateEmptySheet(sheet string) {
+	if !w.hasWrittenSheet {
 		defaultName := w.file.GetSheetName(0)
 		w.file.SetSheetName(defaultName, sheet)
 		w.hasWrittenSheet = true
@@ -77,8 +78,8 @@ func (w *FileWriter)populateEmptySheet(sheet string){
 // an existing sheet is.
 var ErrSheetExists = errors.New("writing: sheet already exists")
 
-func (w *FileWriter)addAndNameSheet(sheet string)error{
-	if w.sheetExists(sheet){
+func (w *FileWriter) addAndNameSheet(sheet string) error {
+	if w.sheetExists(sheet) {
 		return ErrSheetExists
 	}
 	w.file.NewSheet(sheet)
@@ -86,20 +87,20 @@ func (w *FileWriter)addAndNameSheet(sheet string)error{
 }
 
 // WriteDataToSheet writes the given data fields to the given sheet.
-func (w *FileWriter)WriteDataToSheet(header []string, data [][]interface{}, sheet string)error{
+func (w *FileWriter) WriteDataToSheet(header []string, data [][]interface{}, sheet string) error {
 	w.populateEmptySheet(sheet)
 
-	for colIdx, h := range header{
-		coords, _ := excelize.CoordinatesToCellName(colIdx + 1, 1)
-		if err := w.file.SetCellValue(sheet, coords, h); err != nil{
+	for colIdx, h := range header {
+		coords, _ := excelize.CoordinatesToCellName(colIdx+1, 1)
+		if err := w.file.SetCellValue(sheet, coords, h); err != nil {
 			return err
 		}
 	}
 
-	for rowIdx, row := range data{
-		for colIdx, c := range row{
-			coords, _ := excelize.CoordinatesToCellName(colIdx + 1, rowIdx + 2)
-			if err := w.file.SetCellValue(sheet, coords, c); err != nil{
+	for rowIdx, row := range data {
+		for colIdx, c := range row {
+			coords, _ := excelize.CoordinatesToCellName(colIdx+1, rowIdx+2)
+			if err := w.file.SetCellValue(sheet, coords, c); err != nil {
 				return err
 			}
 		}
@@ -107,9 +108,9 @@ func (w *FileWriter)WriteDataToSheet(header []string, data [][]interface{}, shee
 	return nil
 }
 
-func convertStringArrToInterface(sa []string)[]interface{}{
+func convertStringArrToInterface(sa []string) []interface{} {
 	ia := make([]interface{}, len(sa))
-	for i := range sa{
+	for i := range sa {
 		ia[i] = sa[i]
 	}
 	return ia

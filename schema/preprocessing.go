@@ -15,14 +15,14 @@ var ErrTagsWithSameKey = errors.New("schema: struct has multiple fields with sam
 // taggedFieldMap returns a map where the keys are the column headers
 // to be searched for upon parsing a tabular excel sheet.
 // These column headers are added to the map if they have the constant tag key.
-func taggedFieldMap(v reflect.Value)(map[string]int, error){
+func taggedFieldMap(v reflect.Value) (map[string]int, error) {
 	t := v.Type()
 
-	if t.Kind() != reflect.Struct{
+	if t.Kind() != reflect.Struct {
 		return nil, ErrNotStructType
 	}
 	m := make(map[string]int)
-	for i := 0; i<t.NumField();i++{
+	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 
 		value, ok := field.Tag.Lookup(TagKey)
@@ -30,7 +30,7 @@ func taggedFieldMap(v reflect.Value)(map[string]int, error){
 			continue
 		}
 		_, exists := m[value]
-		if exists{
+		if exists {
 			return nil, ErrTagsWithSameKey
 		}
 		m[value] = i
@@ -41,13 +41,13 @@ func taggedFieldMap(v reflect.Value)(map[string]int, error){
 
 // taggedFieldFieldTypeMap returns a map of the indices schema tagged fields
 // with their field Types.
-func taggedFieldFieldTypeMap(v reflect.Value, taggedFieldMap map[string]int)(map[int]reflect.Type, error){
+func taggedFieldFieldTypeMap(v reflect.Value, taggedFieldMap map[string]int) (map[int]reflect.Type, error) {
 	t := v.Type()
-	if t.Kind() != reflect.Struct{
+	if t.Kind() != reflect.Struct {
 		return nil, ErrNotStructType
 	}
 	m := make(map[int]reflect.Type)
-	for _, i := range taggedFieldMap{
+	for _, i := range taggedFieldMap {
 		field := t.Field(i)
 		m[i] = field.Type
 	}
@@ -57,33 +57,34 @@ func taggedFieldFieldTypeMap(v reflect.Value, taggedFieldMap map[string]int)(map
 // preProcessor is used to hold the type and tag information
 // of a type which will be parsed from a tabular excel sheet.
 type preProcessor struct {
-	headerFieldMap map[string]int
-	headerIdxMap map[int]string
+	headerFieldMap     map[string]int
+	headerIdxMap       map[int]string
 	taggedFieldTypeMap map[int]reflect.Type
 }
 
 var ErrPreprocessorHasInvalidTaggedFields = errors.New("schema: preprocessor has tagged fields which are not valid")
+
 // makePreprocessor creates the preprocessor from a given value of a type which will be parsed.
 // It
-func makePreprocessor(v reflect.Value)(preProcessor, error){
+func makePreprocessor(v reflect.Value) (preProcessor, error) {
 	headerFieldMap, err := taggedFieldMap(v)
-	if err != nil{
+	if err != nil {
 		return preProcessor{}, err
 	}
 	headerIdxMap := make(map[int]string)
-	for s, i := range headerFieldMap{
+	for s, i := range headerFieldMap {
 		headerIdxMap[i] = s
 	}
 	taggedFieldFieldTypeMap, err := taggedFieldFieldTypeMap(v, headerFieldMap)
-	if err != nil{
+	if err != nil {
 		return preProcessor{}, err
 	}
 	madePreProcessor := preProcessor{
 		headerFieldMap:     headerFieldMap,
-		headerIdxMap: headerIdxMap,
+		headerIdxMap:       headerIdxMap,
 		taggedFieldTypeMap: taggedFieldFieldTypeMap,
 	}
-	if !preProcessorHasAllValidTaggedTypes(madePreProcessor){
+	if !preProcessorHasAllValidTaggedTypes(madePreProcessor) {
 		return preProcessor{}, ErrPreprocessorHasInvalidTaggedFields
 	}
 
@@ -92,16 +93,16 @@ func makePreprocessor(v reflect.Value)(preProcessor, error){
 
 //getTaggedFieldColumnIndexMap returns a map of key: taggedFieldIndex value:columnIndex where
 // the unique header appears in the data.
-func (pp preProcessor)getTaggedFieldColumnIndexMap(d sheetDetails)(map[int]int, error){
+func (pp preProcessor) getTaggedFieldColumnIndexMap(d sheetDetails) (map[int]int, error) {
 	err := preProcessorIsValidWithHeaderRow(pp, d)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 	colIndices := d.headerExcelColumnIndices()
 	idxMap := make(map[int]int)
 
 	// Can assume valid without checks as validation occurs above.
-	for k, v := range pp.headerFieldMap{
+	for k, v := range pp.headerFieldMap {
 		idxMap[v] = colIndices[k][0]
 	}
 	return idxMap, nil

@@ -1,7 +1,7 @@
 package writing
 
 import (
-	"goexcel/schema"
+	"github.com/C-Canchola/goexcel/schema"
 	"path/filepath"
 	"testing"
 )

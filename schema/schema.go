@@ -18,15 +18,11 @@ const TagKey = "gxl"
 
 // ExcelOffset is used to convert between zero and one based indices for parsing purposes.
 const ExcelOffset = 1
-// ExcelRowOffset is used to adjust for reading of rows
-const ExcelRowOffset = 2
 
 // Schema is used to provide parsing to a single excel file reference
 // in order to populate struct slices.
 type Schema struct {
 	f *excelize.File
-
-	parser parse.Parser
 }
 
 // MakeSchema creates a Schema for a given excel file.
@@ -37,13 +33,8 @@ func MakeSchema(filePath string)(Schema, error){
 	if err != nil{
 		return Schema{}, err
 	}
-	parser, err := parse.MakeParser(f)
-	if err != nil{
-		return Schema{}, err
-	}
 	return Schema{
 		f:      f,
-		parser: parser,
 	}, nil
 }
 

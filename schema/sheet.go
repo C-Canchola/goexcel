@@ -1,8 +1,10 @@
 package schema
 
 import (
+	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/C-Canchola/goexcel/dimension"
+	"time"
 )
 
 // Functions to help store information about the sheet to be parsed by
@@ -15,20 +17,27 @@ type sheetDetails struct {
 }
 
 func makeSheetDetails(f *excelize.File, sheet string)(sheetDetails, error) {
+	tdS := time.Now()
 	tblDimension, err := dimension.MakeTableDimension(f, sheet)
+	fmt.Println("took tblDimension seconds:", time.Now().Sub(tdS).Seconds())
 	if err != nil {
 		return sheetDetails{}, err
 	}
 	headerRow := make([]string, tblDimension.ColumnCount)
+	hStart := time.Now()
 	for i := range headerRow {
 		addr, _ := excelize.CoordinatesToCellName(i+1, 1)
 		header, _ := f.GetCellValue(sheet, addr)
 		headerRow[i] = header
 	}
-	return sheetDetails{
+	fmt.Println("took tblDimension seconds:", time.Now().Sub(hStart).Seconds())
+	dStart := time.Now()
+	d := sheetDetails{
 		headerRow:    headerRow,
 		tblDimension: tblDimension,
-	}, nil
+	}
+	fmt.Println("took sheet detail struct seconds:", time.Now().Sub(dStart).Seconds())
+	return d, nil
 }
 
 func (d sheetDetails)headerExcelColumnIndices()map[string][]int{

@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/C-Canchola/goexcel/parse"
 	"reflect"
@@ -142,10 +143,10 @@ func (shtSc sheetSchema)makeStringField(rowIdx int, fieldIdx int, colIdx int, pp
 // and struct slice based upon the tags of the slice's elements
 func (sc Schema)ApplySchema(sheet string, v interface{})error{
 	sheetSchema, err := sc.makeSheetSchema(sheet)
-
 	if err != nil{
 		return err
 	}
+
 	vSlicePtr := reflect.ValueOf(v)
 	vSlice := vSlicePtr.Elem()
 
@@ -160,7 +161,10 @@ func (sc Schema)ApplySchema(sheet string, v interface{})error{
 		return err
 	}
 
+	dStart := time.Now()
 	sheetDetails, err := makeSheetDetails(sc.f, sheet)
+	dEnd := time.Now()
+	fmt.Println("seconds to create sheet details", dEnd.Sub(dStart).Seconds())
 	if err != nil{
 		return err
 	}
@@ -170,10 +174,13 @@ func (sc Schema)ApplySchema(sheet string, v interface{})error{
 		return err
 	}
 
+	pStart := time.Now()
 	for i := 0; i < sheetDetails.tblDimension.RowCount; i++{
 		newSliceEl := sheetSchema.makeNewSliceEl(sliceEl, preProcessor, taggedFieldMap, i)
 		vSlice.Set(reflect.Append(vSlice, newSliceEl))
 	}
+	pEnd := time.Now()
+	fmt.Println("Seconds to create process schema", pEnd.Sub(pStart).Seconds())
 	return nil
 }
 

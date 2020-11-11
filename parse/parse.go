@@ -9,12 +9,12 @@ import (
 // The goal of this package is to create
 // a way to parse a table to a list of
 // go types.
-
 type Parser struct {
 	f *excelize.File
 
-	styler styler
+	styler *styler
 }
+
 // MakeParser creates a Parser for a given excel file reference.
 func MakeParser(f *excelize.File)(Parser, error){
 	styler, err := makeStyler(f)
@@ -28,7 +28,7 @@ func MakeParser(f *excelize.File)(Parser, error){
 }
 // ParseFloat attempts to parse the given cell address as float64 by applying
 // a numeric styling before accessing the value.
-func (p Parser)ParseFloat(sheet string, row int, col int)(float64, error){
+func (p *Parser)ParseFloat(sheet string, row int, col int)(float64, error){
 	s, err := p.styler.getNumericStyledCellValue(sheet, row, col)
 	if err != nil{
 		return -1, err
@@ -37,7 +37,7 @@ func (p Parser)ParseFloat(sheet string, row int, col int)(float64, error){
 }
 // ParseInt attempts to parse the given cell address as an int by applying
 // a numeric styling before accessing the value.
-func (p Parser)ParseInt(sheet string, row int, col int)(int, error){
+func (p *Parser)ParseInt(sheet string, row int, col int)(int, error){
 	v, err := p.ParseFloat(sheet, row, col)
 	if err != nil{
 		return -1, err
@@ -46,7 +46,7 @@ func (p Parser)ParseInt(sheet string, row int, col int)(int, error){
 }
 // ParseTime attempts to parse the given cell address as a time.Time by
 // applying a numeric styling before accessing the value.
-func (p Parser)ParseTime(sheet string, row int, col int)(time.Time, error){
+func (p *Parser)ParseTime(sheet string, row int, col int)(time.Time, error){
 	v, err := p.ParseFloat(sheet, row, col)
 	if err != nil{
 		return time.Time{}, err
@@ -55,7 +55,7 @@ func (p Parser)ParseTime(sheet string, row int, col int)(time.Time, error){
 }
 // ParseString attempts to parse the given cell address as a string
 // by applying NO styling before accessing the value.
-func (p Parser)ParseString(sheet string, row int, col int)(string, error){
+func (p *Parser)ParseString(sheet string, row int, col int)(string, error){
 	return p.styler.getCurrentStyledCellValue(sheet, row, col)
 }
 type styler struct {
@@ -67,13 +67,13 @@ type styler struct {
 // makeStyler makes a styler for a given excel file reference
 // one styler should be made for one reference to keep consistency with applied
 // style ids
-func makeStyler(f *excelize.File)(styler, error){
+func makeStyler(f *excelize.File)(*styler, error){
 	numberStyle, err := f.NewStyle(`{"decimal_places":15}`)
 	if err != nil{
-		return styler{}, err
+		return nil, err
 	}
 
-	return styler{
+	return &styler{
 		f:           f,
 		numberStyle: numberStyle,
 	}, nil
@@ -81,7 +81,7 @@ func makeStyler(f *excelize.File)(styler, error){
 
 // getCellStyle returns the current style of the sheet cell with given
 // row and column index
-func (s styler)getCellStyle(sheet string, row int, col int)(int, error){
+func (s *styler)getCellStyle(sheet string, row int, col int)(int, error){
 	addr, err := excelize.CoordinatesToCellName(col, row)
 	if err != nil{
 		return -1, err
@@ -91,7 +91,7 @@ func (s styler)getCellStyle(sheet string, row int, col int)(int, error){
 
 // setCellNumericStyle sets the style of a cell to a decimal
 // with maximum precision in terms of excel's significant number limit
-func (s styler)setCellNumericStyle(sheet string, row int, col int)error{
+func (s *styler)setCellNumericStyle(sheet string, row int, col int)error{
 	addr, err := excelize.CoordinatesToCellName(col, row)
 	if err != nil{
 		return err
@@ -102,7 +102,7 @@ func (s styler)setCellNumericStyle(sheet string, row int, col int)error{
 // getNumericStyledCellValue attempts to convert a cell to it's maximum significant
 // decimal digit string representation and return said value.
 // The original style is also re-applied after accessing the numeric styled value.
-func (s styler)getNumericStyledCellValue(sheet string, row int, col int)(string, error){
+func (s *styler)getNumericStyledCellValue(sheet string, row int, col int)(string, error){
 	addr, err := excelize.CoordinatesToCellName(col, row)
 	if err != nil{
 		return "", nil
@@ -123,7 +123,7 @@ func (s styler)getNumericStyledCellValue(sheet string, row int, col int)(string,
 
 // getCurrentStyledCellValue returns the currently styled cell value
 // at the given coordinates
-func (s styler)getCurrentStyledCellValue(sheet string, row int, col int)(string, error){
+func (s *styler)getCurrentStyledCellValue(sheet string, row int, col int)(string, error){
 	addr, err := excelize.CoordinatesToCellName(col, row)
 	if err != nil{
 		return "", err

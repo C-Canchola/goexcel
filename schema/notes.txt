@@ -1,0 +1,15 @@
+String only
+seconds to create sheet details 76.8366312
+Seconds to create process schema 14.1026478
+---
+One Int Parse Only
+seconds to create sheet details 55.9522249
+Seconds to create process schema 25.4750793
+----
+Two Int Parse
+seconds to create sheet details 59.8718619
+Seconds to create process schema 53.2078607
+-----
+Two String
+seconds to create sheet details 71.1012765
+Seconds to create process schema 27.4606857

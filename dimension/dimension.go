@@ -2,7 +2,9 @@ package dimension
 
 import (
 	"errors"
+	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
+	"time"
 )
 
 // Package to work with the dimensioning of an excel tab
@@ -25,7 +27,9 @@ var ErrNoHeaderRow = errors.New("dimension: no header row on tab")
 // MakeTableDimension make a TableDimension struct from
 // an excelize file and sheet name.
 func MakeTableDimension(f *excelize.File, sheet string)(TableDimension, error){
+	getRStart := time.Now()
 	cells, err := f.GetRows(sheet)
+	fmt.Println("took seconds to get all rows", time.Now().Sub(getRStart))
 	if err != nil{
 		return TableDimension{},err
 	}

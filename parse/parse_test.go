@@ -82,3 +82,19 @@ func TestParser(t *testing.T){
 		t.Errorf("expected and parsed times do not match: expected %v parsed %v", expectedTime, parsedTime)
 	}
 }
+
+func TestMakeParsedSheet(t *testing.T) {
+	f, err := excelize.OpenFile(dataFilePath)
+	if err != nil{
+		t.Fatal(err)
+	}
+	ps ,err := MakeParsedSheet(f, "PARSE")
+	if err != nil{
+		t.Fatal(err)
+	}
+
+	fmt.Println(ps.ParsedString(1, 0))
+	fmt.Println(ps.ParsedInt(1, 1))
+	fmt.Println(ps.ParsedFloat(1, 2))
+	fmt.Println(ps.ParsedTime(1, 3))
+}

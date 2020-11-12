@@ -2,6 +2,7 @@ package writing
 
 import (
 	"errors"
+	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"os"
 )
@@ -106,6 +107,26 @@ func (w *FileWriter) WriteDataToSheet(header []string, data [][]interface{}, she
 		}
 	}
 	return nil
+}
+func getTableFormatString(sheet string)string{
+	return fmt.Sprintf(`{
+    "table_name": "%s",
+    "table_style": "TableStyleMedium2",
+    "show_first_column": false,
+    "show_last_column": false,
+    "show_row_stripes": true,
+    "show_column_stripes": false
+}`, sheet+"tbl")
+}
+
+func (w *FileWriter)WriteDataTableToSheet(header[]string, data[][]interface{}, sheet string)error{
+	if err := w.WriteDataToSheet(header, data, sheet); err != nil{
+		return err
+	}
+	endR, endC := len(header), len(data) + 1
+	// Not sure why this appears to be backwards?
+	coords, _ := excelize.CoordinatesToCellName(endR, endC)
+	return w.file.AddTable(sheet, "A1", coords, getTableFormatString(sheet))
 }
 
 func convertStringArrToInterface(sa []string) []interface{} {

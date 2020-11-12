@@ -51,3 +51,30 @@ func TestFileWriter_SaveFile(t *testing.T) {
 		t.Error(err)
 	}
 }
+func TestWriterMultipeWrite(t *testing.T){
+	data, err := getDataToWrite()
+	if err != nil{
+		t.Fatal(err)
+	}
+	writeData := make([][]interface{}, len(data))
+	for i := range data {
+		writeData[i] = make([]interface{}, 2)
+		writeData[i][0] = data[i].Date.ParsedValue
+		writeData[i][1] = data[i].Id.ParsedValue
+	}
+
+	header := []string{"DATE", "ID"}
+
+	writer := MakeNewFileWriter()
+	err = writer.WriteDataToSheet(header, writeData, "STRING_ID")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.WriteDataToSheet(header, writeData, "SECOND_SHEET"); err != nil{
+		t.Fatal(err)
+	}
+	err = writer.SaveFile(filepath.Join("data", "multiWrite.xlsx"), true)
+	if err != nil {
+		t.Error(err)
+	}
+}

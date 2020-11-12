@@ -71,7 +71,7 @@ func (w *FileWriter) populateEmptySheet(sheet string) {
 		w.hasWrittenSheet = true
 		return
 	}
-
+	_ = w.addAndNameSheet(sheet)
 }
 
 // ErrSheetExists is returned when an operation that is not meant to be performed on

@@ -28,6 +28,14 @@ func TestSchema_ApplySchema(t *testing.T) {
 	}
 }
 
+func TestMakeAndApplySchema(t *testing.T) {
+	var idArr []IdData
+	if err := MakeAndApplySchema(filepath.Join("data", "data.xlsx"), "STRING_ID", &idArr); err != nil{
+		t.Fatal(err)
+	}
+	fmt.Println(len(idArr))
+}
+
 type LargeStringOnly struct {
 	ReferenceId StringField `gxl:"Reference ID"`
 }

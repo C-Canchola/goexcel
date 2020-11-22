@@ -137,6 +137,17 @@ func (shtSc sheetSchema) makeStringField(rowIdx int, fieldIdx int, colIdx int, p
 	}
 }
 
+// MakeAndApplySchema creates a schema based on the given file path
+// and attempts the application on the given sheet and value (pointer to slice of whatever
+// type which contains the tagged struct fields to be read from the excel file)
+func MakeAndApplySchema(filePath string, sheet string, v interface{})error{
+	sch, err := MakeSchema(filePath)
+	if err != nil{
+		return err
+	}
+	return sch.ApplySchema(sheet, v)
+}
+
 // ApplySchema attempts to apply the schema to a worksheet
 // and struct slice based upon the tags of the slice's elements
 func (sc Schema) ApplySchema(sheet string, v interface{}) error {

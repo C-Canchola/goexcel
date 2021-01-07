@@ -1,0 +1,14 @@
+Need a data structure to aggregate tables
+based off headers.
+
+Take in variadic ParsedSheets
+
+Ability to somehow define where the header begins
+    - may have to
+
+Header is array of strings
+Have originally formatted data as string
+Also decimal formatted data as string
+    - This allows additional parsing not using schema.
+
+

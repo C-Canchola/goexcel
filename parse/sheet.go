@@ -2,7 +2,9 @@ package parse
 
 import (
 	"errors"
+	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
+	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -20,6 +22,12 @@ var ErrInvalidIndices = errors.New("sheetParse: invalid pair of indices")
 type ParsedSheet struct {
 	Original      [][]string
 	DecimalFormat [][]string
+	// name of the sheet parsed
+	Name string
+	// Path of the file containing the sheet. Empty if parsed directly from excelize file.
+	Path string
+	// Name of file containing sheet. Empty if parsed directly from excelize file.
+	FileName string
 }
 
 func (ps *ParsedSheet) indexErr(r, c int) error {
@@ -92,10 +100,111 @@ func MakeParsedSheet(f *excelize.File, sheet string) (*ParsedSheet, error) {
 	return &ParsedSheet{
 		Original:      shapedCells,
 		DecimalFormat: shapedDecCells,
+		Name: sheet,
 	}, nil
 }
 
-func shapeCells(cells [][]string) [][]string {
+// MakeParsedSheetFromPath attempts to parse a sheet from a given file path
+func MakeParsedSheetFromPath(path string, sheet string)(*ParsedSheet, error){
+	f, err := excelize.OpenFile(path)
+	if err != nil{
+		return nil, err
+	}
+	sht, err := MakeParsedSheet(f, sheet)
+	if err != nil{
+		return nil, err
+	}
+	sht.Name = filepath.Base(path)
+	sht.Path = path
+	return sht, nil
+}
+
+// MakeParsedSheetFromPathAndSheetIndex provides a way to parse a sheet by expected sheet
+// position.
+//	Note: sheetIdx is zero based
+func MakeParsedSheetFromPathAndSheetIndex(path string, sheetIdx int)(*ParsedSheet, error){
+	f, err := excelize.OpenFile(path)
+	if err != nil{
+		return nil, err
+	}
+	sheetName := f.GetSheetName(sheetIdx)
+	if sheetName == ""{
+		return nil, errors.New(fmt.Sprintf("sheet idx %d does not exist in file %s", sheetIdx, path))
+	}
+	sht, err := MakeParsedSheet(f, sheetName)
+	if err != nil{
+		return nil, err
+	}
+	sht.FileName = filepath.Base(path)
+	sht.Path = path
+	return sht, nil
+}
+
+// ParsedFile is the result of attempting to
+// parse all the tabs of a given excel file.
+type ParsedFile struct {
+	ParsedSheets map[string]*ParsedSheet
+	FailedSheets []string
+	name string
+	path string
+}
+
+func (pf *ParsedFile)Name()string{
+	return pf.name
+}
+func (pf *ParsedFile)Path()string{
+	return pf.path
+}
+
+// ListParsedSheets returns a slice of ParsedSheets with no specific order.
+func (pf *ParsedFile)ListParsedSheets()[]ParsedSheet{
+	sheets := make([]ParsedSheet,0, len(pf.ParsedSheets))
+	for _, sheet := range pf.ParsedSheets{
+		sheets = append(sheets, *sheet)
+	}
+	return sheets
+}
+
+func makeParsedFileSync(path string)(*ParsedFile, error){
+	f, err := excelize.OpenFile(path)
+	if err != nil{
+		return nil, err
+	}
+	parsedSheetMap := make(map[string]*ParsedSheet)
+	failedSheets := make([]string, 0)
+
+	for _, nm := range f.GetSheetList(){
+		parsedSheet, err := MakeParsedSheet(f, nm)
+		switch err {
+		case nil:
+			parsedSheetMap[nm] = parsedSheet
+		default:
+			failedSheets = append(failedSheets, nm)
+		}
+	}
+	pf := &ParsedFile{
+		ParsedSheets: parsedSheetMap,
+		FailedSheets: failedSheets,
+		name:         filepath.Base(path),
+		path:         path,
+	}
+	for _, sht := range pf.ParsedSheets{
+		sht.FileName = filepath.Base(path)
+		sht.Path = path
+	}
+	return pf, nil
+}
+
+// MakeParsedFile attempts to parse every sheet of a given file path.
+// TODO parse the sheets concurrently to improve performance
+func MakeParsedFile(path string)(*ParsedFile, error){
+	return makeParsedFileSync(path)
+}
+
+// shapeCells calculates the number of columns
+// for a given tabular data structure and
+// re-dimensions each row to have that number of columns
+func shapeCells2(cells [][]string) [][]string {
 	colCount := getColumnCount(cells)
 	for i := range cells {
 		cells[i] = shapeRow(cells[i], colCount)
@@ -107,6 +216,21 @@ func shapeCells(cells [][]string) [][]string {
 	return cells
 }
 
+// shapeCells calculates the number of columns
+// for a given tabular data structure and
+// re-dimensions each row to have that number of columns
+func shapeCells(cells [][]string) [][]string {
+	colCount := getColumnCount(cells)
+	for i := range cells {
+		cells[i] = shapeRow(cells[i], colCount)
+	}
+	return removeEmptyTrailingRows(cells)
+}
+
+// shapeRow will re-dimension the array of strings
+// to have colCount values.
+//	If colCount < len(r), values will be removed
+// 	If colCount > len(r), empty strings will be added
 func shapeRow(r []string, colCount int) []string {
 	if colCount > len(r) {
 		originalLen := len(r)
@@ -146,4 +270,19 @@ func rowEmpty(row []string, colCount int) bool {
 		}
 	}
 	return true
+}
+
+func removeEmptyTrailingRows(cells [][]string)[][]string{
+	emptyCount := 0
+	for{
+		if emptyCount == len(cells){
+			break
+		}
+		row := cells[len(cells) - 1 - emptyCount]
+		if !rowEmpty(row, len(row)){
+			break
+		}
+		emptyCount++
+	}
+	return cells[:len(cells) - emptyCount]
 }

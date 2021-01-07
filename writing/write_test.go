@@ -1,8 +1,10 @@
 package writing
 
 import (
+	"fmt"
 	"github.com/C-Canchola/goexcel/schema"
 	"path/filepath"
+	"strconv"
 	"testing"
 )
 
@@ -24,6 +26,18 @@ func getDataToWrite() ([]IdData, error) {
 		return nil, err
 	}
 	return idArr, nil
+}
+func getLargeDataToWrite()([]IdData, error){
+	data, err := getDataToWrite()
+	if err != nil{
+		return nil, err
+	}
+	nCopy := 100
+	largeData := make([]IdData, 0, nCopy * len(data))
+	for i := 0; i < nCopy; i++{
+		largeData = append(largeData, data...)
+	}
+	return largeData, nil
 }
 
 func TestFileWriter_SaveFile(t *testing.T) {
@@ -100,6 +114,31 @@ func TestTableWrite(t *testing.T){
 
 	err = writer.SaveFile(filepath.Join("data", "tableWrite.xlsx"), true)
 	if err != nil {
+		t.Error(err)
+	}
+}
+func TestLargeWrite(t *testing.T){
+	data, err := getLargeDataToWrite()
+
+	if err != nil{
+		t.Fatal(err)
+	}
+	writeData := make([][]interface{}, len(data))
+	for i := range data {
+		writeData[i] = make([]interface{}, 2)
+		writeData[i][0] = data[i].Date.ParsedValue
+		writeData[i][1] = data[i].Id.ParsedValue
+	}
+	header := []string{"DATE", "ID"}
+
+	writer := MakeNewFileWriter()
+	for i := 1; i <= 100; i++{
+		fmt.Println("writing sheet", i)
+		if err := writer.WriteDataToSheet(header, writeData, strconv.Itoa(i)); err != nil{
+			t.Fatal(err)
+		}
+	}
+	if err := writer.SaveFile(filepath.Join("data", "largeWrite.xlsx"), true);err != nil{
 		t.Error(err)
 	}
 }

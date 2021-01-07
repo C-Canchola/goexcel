@@ -74,6 +74,58 @@ func (ps *ParsedSheet) ParsedTime(r, c int) (time.Time, error) {
 	return excelize.ExcelDateToTime(f, false)
 }
 
+// RemoveColumnFromRowPred removes columns of data where the given predicate function
+// returns true on the given row index
+func (ps *ParsedSheet)RemoveColumnFromRowPred(rIdx int, pred func(s string)bool){
+	filterNeeded := false
+	keepMap := make(map[int]bool)
+	for colIdx, rowS := range ps.Original[rIdx]{
+		if pred(rowS){
+			filterNeeded = true
+			keepMap[colIdx] = true
+		}
+	}
+	if !filterNeeded{
+		return
+	}
+	original, decimal := make([][]string, 0, len(ps.Original)), make([][]string, 0, len(ps.DecimalFormat))
+	for rowIdx := range ps.Original{
+		originalRow, decimalRow := make([]string, 0, len(ps.Original[rowIdx])), make([]string, 0, len(ps.DecimalFormat[rowIdx]))
+		for colIdx := range ps.Original[rowIdx]{
+			if keepMap[colIdx]{
+				continue
+			}
+			originalRow = append(originalRow, ps.Original[rowIdx][colIdx])
+			decimalRow = append(decimalRow, ps.DecimalFormat[rowIdx][colIdx])
+		}
+		original = append(original, originalRow)
+		decimal = append(decimal, decimalRow)
+	}
+	ps.Original = original
+	ps.DecimalFormat = decimal
+}
+// RemoveDuplicateColumnsFromRow removes all columns which have a duplicate value in the row with the given index.
+func (ps *ParsedSheet)RemoveDuplicateColumnsFromRow(rowIdx int){
+	valCountMap := make(map[string]int)
+	for _, v := range ps.Original[rowIdx]{
+		valCountMap[v] = valCountMap[v] + 1
+	}
+	pred := func(s string)bool{
+		return valCountMap[s] >= 2
+	}
+	ps.RemoveColumnFromRowPred(rowIdx, pred)
+}
+
+// RemoveRightDuplicateColumnsFromRow keeps the first found column of a row with a given value
+// and removes any subsequent columns with that same value.
+func (ps *ParsedSheet)RemoveRightDuplicateColumnsFromRow(rowIdx int){
+	valCountMap := make(map[string]int)
+	pred := func(s string)bool{
+		valCountMap[s] = valCountMap[s] + 1
+		return valCountMap[s] >= 2
+	}
+	ps.RemoveColumnFromRowPred(rowIdx, pred)
+}
 // MakeParsedSheet returns a ParsedSheet to provide quick access to both the originally formatted
 // cell values as well as the decimal formatted cell values.
 func MakeParsedSheet(f *excelize.File, sheet string) (*ParsedSheet, error) {

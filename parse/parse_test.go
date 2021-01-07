@@ -10,6 +10,7 @@ import (
 var dataFilePath = filepath.Join("data", "data.xlsx")
 var largeDataFilePath = filepath.Join("data", "largeWrite.xlsx")
 var aggDataPath = filepath.Join("data", "aggTest.xlsx")
+var dupDataPath = filepath.Join("data", "dup.xlsx")
 
 func TestMakeParsedSheet(t *testing.T) {
 	f, err := excelize.OpenFile(dataFilePath)
@@ -98,5 +99,24 @@ func TestAggregateAllSheetsDefaultInfo(t *testing.T) {
 	}
 	if ps1.Name != "AGG_1"{
 		t.Error("parsed sheet name should equal AGG_1, is:",ps1.Name)
+	}
+}
+
+func TestColumnFilter(t *testing.T){
+	ps, err := MakeParsedSheetFromPathAndSheetIndex(dupDataPath, 0)
+	if err != nil{
+		t.Fatal(err)
+	}
+	ps.RemoveDuplicateColumnsFromRow(0)
+	if len(ps.Original[0]) != 1{
+		t.Error("parsed sheet should have 1 column after removing duplicates. has", len(ps.Original[0]))
+	}
+	psRight, err := MakeParsedSheetFromPathAndSheetIndex(dupDataPath, 0)
+	if err != nil{
+		t.Fatal(err)
+	}
+	psRight.RemoveRightDuplicateColumnsFromRow(0)
+	if len(psRight.Original[0]) != 2{
+		t.Error("parsed sheet should have 2 columns after removing duplicates. has", len(psRight.Original[0]))
 	}
 }

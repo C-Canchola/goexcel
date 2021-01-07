@@ -38,6 +38,7 @@ type AggregateInfo struct {
 func (ai AggregateInfo)Header()[]string{
 	return ai.Sheet.Original[ai.StartRow][ai.StartCol:]
 }
+
 func dataFromInfo(data [][]string, startRow int, startCol int)[][]string{
 	return data[startRow + 1:][startCol:]
 }
@@ -50,6 +51,18 @@ func (ai AggregateInfo)DecimalFormattedData()[][]string{
 // originally formatted data.
 func (ai AggregateInfo)OriginalFormattedData()[][]string{
 	return dataFromInfo(ai.Sheet.Original, ai.StartRow, ai.StartCol)
+}
+
+// CanAggregate returns whether the aggregate info is able to
+// be aggregated.
+func (ai AggregateInfo)CanAggregate()bool{
+	if ai.StartRow >= len(ai.Sheet.Original){
+		return false
+	}
+	if ai.StartCol >= len(ai.Sheet.Original[ai.StartRow]){
+		return false
+	}
+	return true
 }
 
 // checkHeaderDuplicates checks for existence of duplicate column headers
@@ -109,6 +122,14 @@ func createAggregateRowMapper(ai AggregateInfo, aggPosMap map[string]int)func([]
 }
 // AggregateAllSheets returns an AggregatedParse from all the given AggregateInfos
 func AggregateAllSheets(ais ...AggregateInfo)(AggregatedParse, error){
+	aggregatableAis := make([]AggregateInfo, 0, len(ais))
+	for _, ai := range ais{
+		if !ai.CanAggregate(){
+			continue
+		}
+		aggregatableAis = append(aggregatableAis, ai)
+	}
+	ais = aggregatableAis
 	aggPosMap, err := allHeaderIndices(ais...)
 	if err != nil{
 		return AggregatedParse{}, err

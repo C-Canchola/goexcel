@@ -108,6 +108,33 @@ func (w *FileWriter) WriteDataToSheet(header []string, data [][]interface{}, she
 	}
 	return nil
 }
+// WriteStringDataToSheet attempts to write purely string data to a sheet in a way where
+// the format is maintained.
+func (w *FileWriter)WriteStringDataToSheet(header []string, data[][]string, sheet string)error{
+	w.populateEmptySheet(sheet)
+	sw, err := w.file.NewStreamWriter(sheet)
+	if err != nil{
+		return err
+	}
+
+	coords, _ := excelize.CoordinatesToCellName(1, 1)
+
+	if err := sw.SetRow(coords, convertStringArrToInterfaceArr(header)); err != nil{
+		return err
+	}
+
+	for rowIdx, row := range data{
+		coords, _ = excelize.CoordinatesToCellName(1, rowIdx + 2)
+		if err := sw.SetRow(coords, convertStringArrToInterfaceArr(row)); err != nil{
+			return err
+		}
+	}
+	if err := sw.Flush(); err != nil{
+		return err
+	}
+	return nil
+}
+
 func getTableFormatString(sheet string)string{
 	return fmt.Sprintf(`{
     "table_name": "%s",

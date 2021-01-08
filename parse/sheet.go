@@ -30,6 +30,33 @@ type ParsedSheet struct {
 	FileName string
 }
 
+func applyPrefixColumn(data [][]string, colName string, mapper func()string)[][]string{
+	newData := make([][]string, 0, len(data))
+	for idx, row := range data{
+		if idx == 0 {
+			newRow := make([]string, 0, len(row)+1)
+			newRow = append(newRow, colName)
+			newRow = append(newRow, row...)
+			newData = append(newData, newRow)
+		}else{
+			newRow := make([]string, 0, len(row)+1)
+			newRow = append(newRow, mapper())
+			newRow = append(newRow, row...)
+			newData = append(newData, newRow)
+		}
+	}
+	return newData
+}
+
+// ApplyPrefixColumn adds a new column to the left of the data.
+//	The first cell is the colName and every subsequent value is the returned value of mapper
+func (ps *ParsedSheet)ApplyPrefixColumn(colName string, mapper func()string){
+	newOriginal := applyPrefixColumn(ps.Original, colName, mapper)
+	newDecimal := applyPrefixColumn(ps.DecimalFormat, colName, mapper)
+	ps.Original = newOriginal
+	ps.DecimalFormat = newDecimal
+}
+
 func (ps *ParsedSheet) indexErr(r, c int) error {
 	if r > len(ps.Original) || c > len(ps.Original[0]) {
 		return ErrInvalidIndices

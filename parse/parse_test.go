@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"path/filepath"
+	"strconv"
 	"testing"
 )
 
@@ -119,4 +120,19 @@ func TestColumnFilter(t *testing.T){
 	if len(psRight.Original[0]) != 2{
 		t.Error("parsed sheet should have 2 columns after removing duplicates. has", len(psRight.Original[0]))
 	}
+}
+func TestParsedSheet_ApplyPrefixColumn(t *testing.T) {
+	ps, err := MakeParsedSheetFromPath(dataFilePath, "PARSE")
+	if err != nil{
+		t.Fatal(err)
+	}
+	rowMapper := func()func()string{
+		count := 0
+		return func()string{
+			count++
+			return strconv.Itoa(count)
+		}
+	}
+	ps.ApplyPrefixColumn("ROW_NUMBER", rowMapper())
+	fmt.Println(ps.Original[0])
 }

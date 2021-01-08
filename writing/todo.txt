@@ -1,0 +1,10 @@
+Add Index tab feature:
+    This feature will provide a way to have a single tab which references other tabs.
+    Meant to be used for large files where naming and navigation becomes a difficult consideration.
+
+Index Tab shall have:
+    - Links to tab, on the name column
+    - Ability to add descriptor columns
+    - Name column is necessary and first column always
+
+Data tabs will have link back to index tab which links to to the hyperlink back to them.

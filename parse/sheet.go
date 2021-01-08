@@ -292,6 +292,7 @@ func shapeRow(r []string, colCount int) []string {
 	}
 	return r[:colCount]
 }
+// getColumnCount returns the number of columns of the first row of data
 func getColumnCount(cells [][]string) int {
 	if len(cells) == 0 {
 		return 0

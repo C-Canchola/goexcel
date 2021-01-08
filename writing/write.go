@@ -5,18 +5,32 @@ import (
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"os"
+	"strconv"
 )
 
 // tableColumnRatio is used to space column widths
 // when writing to an excel table format.
 const tableColumnRatio = 1.229
 
+// excelOffset is used to work with zero based code but translated for excel dimensions
+const excelOffset = 1
+
+// headerOffset is used to signify that a header row exists and data should start below
+const headerOffset = 1
+
+// nextSheetOffset is meant to signify that information is currently being written for a sheet being added.
+// current sheet count is not incremented until all the information has been written successfully which
+// is the why this is needed.
+const nextSheetOffset = 1
+
 // FileWriter is meant to provide a simple
 // set of methods to write data to an excel file.
 type FileWriter struct {
 	file            *excelize.File
 	hasWrittenSheet bool
+
 }
+
 
 // MakeNewFileWriter creates a new FileWriter
 func MakeNewFileWriter() *FileWriter {
@@ -25,6 +39,7 @@ func MakeNewFileWriter() *FileWriter {
 		hasWrittenSheet: false,
 	}
 }
+
 
 // MakeFileWriterFromExisting reads an existing Excel file
 // so that its contents can be appended or changed.
@@ -162,4 +177,127 @@ func convertStringArrToInterface(sa []string) []interface{} {
 		ia[i] = sa[i]
 	}
 	return ia
+}
+
+// IndexedWriter is a special type of FileWriter in which tabs are
+// added with numeric ids, hyperlinks are added for navigation,
+// and descriptor values are possible.
+//	Meant to be specifically used for writing large amounts of data
+//	which is separated by tabs.
+type IndexedWriter struct {
+	fw *FileWriter
+	indexedSheetCount int
+	hyperlinkStyle int
+}
+
+// indexSheetName is the constant name of the index tab
+const indexSheetName = "INDEX"
+
+// MakeNewIndexedWriter creates a new indexed writer.
+//	An index tab is created with the headers "TAB_NAME" and any
+//	additional columns provided.
+//	Be sure to ensure that any additional details match the ordering given here.
+func MakeNewIndexedWriter(additionalCols ...string)*IndexedWriter{
+	indexedWriter :=  &IndexedWriter{
+		fw:        MakeNewFileWriter(),
+		indexedSheetCount: 0,
+	}
+	style, _ := indexedWriter.fw.file.NewStyle(`{"font":{"color":"#1265BE","underline":"single"}}`)
+	indexedWriter.hyperlinkStyle = style
+	header := append([]string{"TAB_NAME"}, additionalCols...)
+	_ = indexedWriter.fw.WriteStringDataToSheet(header, make([][]string, 0), indexSheetName)
+	return indexedWriter
+}
+
+// getNextSheetName returns the numeric string used for naming a data file
+func (iw *IndexedWriter) getNextSheetName()string{
+	return strconv.Itoa(iw.indexedSheetCount + 1)
+}
+
+// getCurrentIndexCellAddress returns the cell of the current index row
+// which is based on the number of sheets which have been written.
+// 	Zero based, 0 -> column 1 e.g. 0 called with sheet count of 0 = B1
+func (iw *IndexedWriter) getCurrentIndexCellAddress(col int)string{
+	addr, _ := excelize.CoordinatesToCellName(col + excelOffset, iw.indexedSheetCount + headerOffset + nextSheetOffset)
+	return addr
+}
+
+// writeIndexedValue writes the provided writeVal to the current row with the given column.
+func (iw *IndexedWriter)writeIndexedValue(col int, writeVal interface{})error{
+	return iw.fw.file.SetCellValue(indexSheetName, iw.getCurrentIndexCellAddress(col), writeVal)
+}
+
+// writeAdditionalDetails writes the sheet name and any additional details to the index tab
+func (iw *IndexedWriter)writeAdditionalDetails(shtName string, additionalDetails ...interface{})error{
+	if err := iw.writeIndexedValue(0, shtName); err != nil{
+		return err
+	}
+	for colIdx, detail := range additionalDetails{
+		if err := iw.writeIndexedValue(colIdx + 1, detail); err != nil{
+			return err
+		}
+	}
+	return nil
+}
+
+func (iw *IndexedWriter)nextSheetStartCellAddress()string{
+	return fmt.Sprintf("%s!A1", iw.getNextSheetName())
+}
+func (iw *IndexedWriter)nextIndexHyperlinkAddress()string{
+	return fmt.Sprintf("%s!%s", indexSheetName, iw.getCurrentIndexCellAddress(0))
+}
+
+func (iw *IndexedWriter)writeHyperlinks()error{
+	currentName := iw.getNextSheetName()
+	if err := iw.fw.file.SetCellHyperLink(indexSheetName, iw.getCurrentIndexCellAddress(0), iw.nextSheetStartCellAddress(), "Location"); err != nil{
+		return err
+	}
+	if err := iw.fw.file.SetCellStyle(indexSheetName, iw.getCurrentIndexCellAddress(0), iw.getCurrentIndexCellAddress(0), iw.hyperlinkStyle); err != nil{
+		return err
+	}
+	if err := iw.fw.file.SetCellHyperLink(currentName, "A1", iw.nextIndexHyperlinkAddress(), "Location"); err != nil{
+		return err
+	}
+	if err := iw.fw.file.SetCellStyle(currentName, "A1", "A1", iw.hyperlinkStyle); err != nil{
+		return err
+	}
+	return nil
+}
+
+// WriteStringDataToSheet writes a tab with the given string data and adds the details to the index tab as well
+// as navigation links.
+func (iw *IndexedWriter) WriteStringDataToSheet(header []string, data [][]string, additionalDetails ...interface{})error{
+	shtName := iw.getNextSheetName()
+	if err := iw.fw.WriteStringDataToSheet(header, data, shtName); err != nil{
+		return err
+	}
+	if err := iw.writeAdditionalDetails(shtName, additionalDetails...); err != nil{
+		return err
+	}
+	if err := iw.writeHyperlinks(); err != nil{
+		return err
+	}
+	iw.indexedSheetCount++
+	return nil
+}
+// WriteInterfaceDataToSheet writes empty interface data to an indexed tab.
+func (iw *IndexedWriter)WriteInterfaceDataToSheet(header []string, data [][]interface{}, additionalDetails ...interface{})error{
+	shtName := iw.getNextSheetName()
+	if err := iw.fw.WriteDataToSheet(header, data, shtName); err != nil{
+		return err
+	}
+	if err := iw.writeAdditionalDetails(shtName, additionalDetails...); err != nil{
+		return err
+	}
+	if err := iw.writeHyperlinks(); err != nil{
+		return err
+	}
+	iw.indexedSheetCount++
+	return nil
+}
+
+// SaveFile saves the indexed file at the given path.
+// 	overwrite flag will replace an existing file.
+func (iw *IndexedWriter)SaveFile(path string, overwrite bool)error{
+	return iw.fw.SaveFile(path, overwrite)
 }

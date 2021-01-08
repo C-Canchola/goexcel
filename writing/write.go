@@ -150,6 +150,11 @@ func (w *FileWriter)WriteStringDataToSheet(header []string, data[][]string, shee
 	return nil
 }
 
+// FreezeTopRow freezes the top row of a sheet and sets the active cell to the first cell (A1)
+func (w *FileWriter)FreezeTopRow(sheet string)error{
+	return w.file.SetPanes(sheet, `{"freeze":true,"split":false,"x_split":0,"y_split":1,"top_left_cell":"A2","active_pane":"bottomLeft","panes":[{"sqref":"A1","active_cell":"A1","pane":"bottomLeft"}]}`)
+}
+
 func getTableFormatString(sheet string)string{
 	return fmt.Sprintf(`{
     "table_name": "%s",
@@ -206,6 +211,7 @@ func MakeNewIndexedWriter(additionalCols ...string)*IndexedWriter{
 	indexedWriter.hyperlinkStyle = style
 	header := append([]string{"TAB_NAME"}, additionalCols...)
 	_ = indexedWriter.fw.WriteStringDataToSheet(header, make([][]string, 0), indexSheetName)
+	_ = indexedWriter.fw.FreezeTopRow(indexSheetName)
 	return indexedWriter
 }
 
@@ -277,6 +283,9 @@ func (iw *IndexedWriter) WriteStringDataToSheet(header []string, data [][]string
 	if err := iw.writeHyperlinks(); err != nil{
 		return err
 	}
+	if err := iw.fw.FreezeTopRow(shtName); err != nil{
+		return err
+	}
 	iw.indexedSheetCount++
 	return nil
 }
@@ -292,6 +301,9 @@ func (iw *IndexedWriter)WriteInterfaceDataToSheet(header []string, data [][]inte
 	if err := iw.writeHyperlinks(); err != nil{
 		return err
 	}
+	if err := iw.fw.FreezeTopRow(shtName); err != nil{
+		return err
+	}
 	iw.indexedSheetCount++
 	return nil
 }
@@ -301,3 +313,4 @@ func (iw *IndexedWriter)WriteInterfaceDataToSheet(header []string, data [][]inte
 func (iw *IndexedWriter)SaveFile(path string, overwrite bool)error{
 	return iw.fw.SaveFile(path, overwrite)
 }
+

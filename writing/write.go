@@ -163,7 +163,7 @@ func getTableFormatString(sheet string)string{
     "show_last_column": false,
     "show_row_stripes": true,
     "show_column_stripes": false
-}`, "TBL_" + sheet)
+}`, "TBL__" + sheet)
 }
 
 func (w *FileWriter)WriteDataTableToSheet(header[]string, data[][]interface{}, sheet string)error{
